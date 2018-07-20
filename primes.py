@@ -52,15 +52,18 @@ def is_prime(n):
     return False
 
 
+def is_power_of_2(num):
+    return ((num & (num - 1)) == 0) and num != 0
+
+
 def generate_large_prime(bit_length):
-    max_attempts = 100 * (math.log(bit_length, 2) + 1)
-    r_ = max_attempts
-    while max_attempts > 0:
+    if not is_power_of_2(bit_length):
+        raise NumberNotPowerOf2Error
+    while True:
         n = random.randrange(2 ** (bit_length - 1), 2 ** bit_length)
-        max_attempts -= 1
         if is_prime(n):
             return n
-    return "Failure after " + `r_` + " tries."
 
 
-print generate_large_prime(1024)
+class NumberNotPowerOf2Error(Exception):
+    pass
