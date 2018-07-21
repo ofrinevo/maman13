@@ -2,7 +2,6 @@ import random
 from primes import is_prime, generate_large_prime
 
 
-# return (g, x, y) such that a*x + b*y = gcd(x, y)
 def gcd(x, y):
     x = abs(x)
     y = abs(y)
@@ -11,6 +10,7 @@ def gcd(x, y):
     return y
 
 
+# This method is taken from the internet. I needed a really fast method here so this is from PyCrypto
 def multiplicative_inverse(u, v):
     u3, v3 = long(u), long(v)
     u1, v1 = 1L, 0L
@@ -28,19 +28,18 @@ def get_phi(p, q):
 
 
 def generate_public_key(phi):
-    g = 0
-    public_key = 0
-    while g != 1:
-        public_key = random.randrange(1, phi)
-        g = gcd(public_key, phi)
-    return public_key
+    public_key = 3
+    while True:
+        if gcd(public_key, phi) == 1:
+            return public_key
+        public_key += 1
 
 
 def generate_private_key(e, phi):
     return multiplicative_inverse(e, phi)
 
 
-def get_RSA_keys(bit_len, p=None, q=None):
+def get_RSA_keys(bit_len=None, p=None, q=None):
     if p and q:
         if p == q:
             raise Exception('Numbers must be different')

@@ -1,47 +1,43 @@
-# coding=utf-8
-import sys
-import client
-import server
-import primes
+# Echo server program
+import socket
+
+import RSA
 import consts
 import key_gen
-import RSA
 
 
-def main():
-    if len(sys.argv) < 2:
-        print 'enter arg form console/server/client'
-        return
-    if sys.argv[1] == 'client':
-        client.run_client()
-    elif sys.argv[1] == 'server':
-        server.run_server()
-    elif sys.argv[1] == 'console':
-        console_mode()
-    else:
-        print 'enter arg form console/server/client'
-    return
+def run_server():
+    host = ''
+    port = 8080
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind((host, port))
+    s.listen(1)
+    print 'Creating rsa keys'
+    rsa_keys = _init_server_rsa()
+    print 'Done making rsa keys, can connect client'
+    conn, addr = s.accept()
+    print 'Connected by', addr
+    conn.send('0 {}'.format(rsa_keys[0]))
+    while True:
+        print 'Ready to receive msgs from client'
+        enc_msg = conn.recv(10240)
+        if not enc_msg:
+            print 'User disconnected, exiting'
+            break
+        plain_text = RSA.decrypt_str(int(enc_msg), rsa_keys[1][0], rsa_keys[1][1])
+        print plain_text
+    conn.close()
 
 
-def console_mode():
-    print 'Welcome to RSA!'
+def _init_server_rsa():
+    print 'Welcome to RSA Server!'
     p, q = _get_primes_from_user()
     if not p or not q:
         bit_len = _get_bit_len_from_user()
     else:
-        bit_len = consts.DEFAULT_KEY_SIZE
+        bit_len = consts.DEFAULT_KEY_SIZE / 4
     keys = key_gen.get_RSA_keys(bit_len, p, q)
-    n = keys[0][1]
-    public_key = keys[0][0]
-    private_key = keys[1][0]
-    while True:
-        msg = _get_msg_to_enc()
-        if msg == 'exit':
-            break
-        enc = RSA.encrypt_str(msg, public_key, n)
-        print 'Enc msg is: {}'.format(enc)
-        dec = RSA.decrypt_str(enc, private_key, n)
-        print 'dec msg is: {}'.format(dec)
+    return keys
 
 
 def _get_bit_len_from_user():
@@ -51,7 +47,7 @@ def _get_bit_len_from_user():
         try:
             user_input = raw_input()
             if user_input == '':
-                print 'Running with 1024.'
+                print 'Running with {}.'.format(consts.DEFAULT_KEY_SIZE)
                 return consts.DEFAULT_KEY_SIZE
             bit_len = int(user_input)
             return bit_len
@@ -81,13 +77,3 @@ def _get_primes_from_user():
         except:
             print 'You entered a non valid number, try again.'
         return p, q
-
-
-def _get_msg_to_enc():
-    print 'Please enter a msg to enc or type exit to quit:'
-    msg = raw_input()
-    return msg
-
-
-if __name__ == "__main__":
-    main()
