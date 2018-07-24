@@ -27,6 +27,7 @@ def encrypt_str(message, ekey, n):
     return encrypt_int(long_msg, ekey, n)
 
 
+# TODO add support for longer msgs using blocks
 def decrypt_str(cypher, dkey, n):
     long_msg = decrypt_int(cypher, dkey, n)
     return convert_long_to_str(long_msg)
