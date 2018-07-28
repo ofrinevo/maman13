@@ -42,9 +42,12 @@ class Client(object):
         return self.RSA.encrypt(msg)
 
 
-def run_client():
+def run_client(host, port):
     try:
-        client = Client()
+        if host is None or port is None:
+            client = Client()
+        else:
+            client = Client(host, port)
         _gui(client)
     except:
         raise

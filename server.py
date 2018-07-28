@@ -53,10 +53,13 @@ class Server(object):
         self.socket.close()
 
 
-def run_server():
+def run_server(host, port):
     try:
         print 'Waiting for client, will open gui after a client connects'
-        server = Server()
+        if host is None or port is None:
+            server = Server()
+        else:
+            server = Server(host, port)
         _gui(server)
     except:
         raise
