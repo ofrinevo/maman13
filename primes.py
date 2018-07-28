@@ -2,6 +2,7 @@ import random
 
 
 def rabin_miller(n):
+    # Rabin-Miler algorithm to calc large primes efficiently
     s = n - 1
     t = 0
     while s & 1 == 0:
@@ -10,10 +11,7 @@ def rabin_miller(n):
     k = 0
     while k < 128:
         a = random.randrange(2, n - 1)
-        # a^s is computationally infeasible.  we need a more intelligent approach
-        # v = (a**s)%n
-        # python's core math module can do modular exponentiation
-        v = pow(a, s, n)  # where values are (num,exp,mod)
+        v = pow(a, s, n)
         if v != 1:
             i = 0
             while v != (n - 1):
@@ -50,14 +48,15 @@ def is_prime(n):
     return False
 
 
-def is_power_of_2(num):
+def _is_power_of_2(num):
     return ((num & (num - 1)) == 0) and num != 0
 
 
 def generate_large_prime(bit_length):
-    if not is_power_of_2(bit_length):
+    if not _is_power_of_2(bit_length):
         raise NumberNotPowerOf2Error
     while True:
+        # Generate large number in the correct range and return if prime
         n = random.randrange(2 ** (bit_length - 1), 2 ** bit_length)
         if is_prime(n):
             return n

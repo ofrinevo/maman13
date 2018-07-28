@@ -16,15 +16,15 @@ class Server(object):
         self.socket = self._init_socket()
         self.init_new_client()
 
-    def init_new_client(self):
-        self._init_rsa()
-        self.connect_client()
-
     def _init_socket(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.bind((self.host, self.port))
         s.listen(1)
         return s
+
+    def init_new_client(self):
+        self._init_rsa()
+        self.connect_client()
 
     def _init_rsa(self):
         rsa_keys = key_gen.get_RSA_keys(consts.DEFAULT_KEY_SIZE)
@@ -50,6 +50,8 @@ class Server(object):
         return self.rsa_instance.decrypt(str(cipher))
 
     def close(self):
+        # First close connection to client, then close own connection
+        self.conn.close()
         self.socket.close()
 
 
@@ -72,7 +74,6 @@ def _gui(server):
                 server.init_new_client()
                 n_entry.insert(0, server.rsa_instance.n)
             handle_existing_client()
-        # root.after(0, handle_clients())
 
     def handle_existing_client():
         while True:
@@ -81,13 +82,15 @@ def _gui(server):
                 return
             dec_msg = server.decrypt_msg(enc_msg)
 
-            cipher_listbox.delete(0, 'end')
-            plain_listbox.delete(0, 'end')
-
-            cipher_listbox.insert(0, enc_msg)
-            plain_listbox.insert(0, dec_msg)
+            # First clear the current text
+            cipher.delete(0, 'end')
+            plaintext.delete(0, 'end')
+            # Then put in the new msgs
+            cipher.insert(0, enc_msg)
+            plaintext.insert(0, dec_msg)
 
     def on_closing():
+        # User closed the window
         server.close()
         root.destroy()
         os._exit(0)
@@ -104,16 +107,17 @@ def _gui(server):
 
     show = Label(root, text='Cipher:')
     show.pack()
-    cipher_listbox = Entry(root, justify='center', width=200)
-    cipher_listbox.pack()
+    cipher = Entry(root, justify='center', width=200)
+    cipher.pack()
 
     show_plain = Label(root, text='Plain Text:')
     show_plain.pack()
-    plain_listbox = Entry(root, justify='center', width=200)
-    plain_listbox.pack()
+    plaintext = Entry(root, justify='center', width=200)
+    plaintext.pack()
 
     root.protocol("WM_DELETE_WINDOW", on_closing)
 
+    # Threading is needed here so the mainloop ot Tkinter and the main loop of the server work with each other.
     t1 = threading.Thread(target=handle_clients)
     t2 = threading.Thread(target=root.mainloop)
     t1.start()

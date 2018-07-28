@@ -29,12 +29,14 @@ class Client(object):
         self.RSA = RSA(public_key=key[0], n=key[1])
 
     def close(self):
-        self.server.close()
+        if self.server:
+            self.server.close()
 
     def send_to_server(self, msg):
         self.server.send(str(msg))
 
     def _get_key(self, data):
+        # Parses the received key from the server
         tup_key = eval(data)
         return tup_key[0], tup_key[1]
 
@@ -44,6 +46,7 @@ class Client(object):
 
 def run_client(host, port):
     try:
+        # Create client instance, and then run GUI
         if host is None or port is None:
             client = Client()
         else:
@@ -55,6 +58,7 @@ def run_client(host, port):
 
 def _gui(client):
     def click_enc():
+        # Handles the click on the encryption button
         msg = plain_text_entry.get()
         if msg:
             enc = client.encrypt_msg(msg)
