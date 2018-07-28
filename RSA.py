@@ -2,7 +2,7 @@ import consts
 
 
 def convert_str_to_long(s):
-    hex_str = s.encode('utf-8').encode('hex')
+    hex_str = s.encode('hex')
     return long(hex_str, 16)
 
 
@@ -38,18 +38,24 @@ class RSA(object):
         return convert_long_to_str(long_msg)
 
     def encrypt(self, data):
-        block_size = self.key_size / 4 - 1
-        data_stream = (data[i:i + block_size] for i in range(0, len(data), block_size))
-        enc = b''
-        for block in data_stream:
-            enc_block = str(self._encrypt_str(block))
-            enc += enc_block + ','
-        enc = enc[:-1]
-        return enc
+        try:
+            block_size = self.key_size / 4
+            data_stream = (data[i:i + block_size] for i in range(0, len(data), block_size))
+            enc = b''
+            for block in data_stream:
+                enc_block = str(self._encrypt_str(block))
+                enc += enc_block + ','
+            enc = enc[:-1]
+            return enc
+        except Exception as e:
+            raise Exception('Had an error encrypting', e)
 
     def decrypt(self, data):
-        data_stream = data.split(',')
-        dec = b''
-        for block in data_stream:
-            dec += self._decrypt_str(int(block))
-        return dec
+        try:
+            data_stream = data.split(',')
+            dec = b''
+            for block in data_stream:
+                dec += self._decrypt_str(int(block))
+            return dec
+        except:
+            raise Exception('Had an error decrypting')

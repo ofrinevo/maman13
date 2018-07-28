@@ -10,17 +10,20 @@ def console_mode():
     if not p or not q:
         bit_len = _get_bit_len_from_user()
     else:
-        bit_len = consts.DEFAULT_KEY_SIZE
+        bit_len = max(p, q).bit_length()
     keys = key_gen.get_RSA_keys(bit_len, p, q)
     rsa_instance = RSA(n=keys[0][1], public_key=keys[0][0], private_key=keys[1][0], key_size=bit_len)
     while True:
         msg = _get_msg_to_enc()
         if msg == 'exit':
             break
-        enc = rsa_instance.encrypt(msg)
-        print 'Enc msg is: {}'.format(enc)
-        dec = rsa_instance.decrypt(enc)
-        print 'Dec msg is: {}'.format(dec)
+        try:
+            enc = rsa_instance.encrypt(msg)
+            print 'Enc msg is: {}'.format(enc)
+            dec = rsa_instance.decrypt(enc)
+            print 'Dec msg is: {}'.format(dec)
+        except Exception as e:
+            print e
 
 
 def _get_bit_len_from_user():

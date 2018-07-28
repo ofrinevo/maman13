@@ -39,7 +39,7 @@ class Client(object):
         return tup_key[0], tup_key[1]
 
     def encrypt_msg(self, msg):
-        return self.RSA.encrypt(msg)
+        return self.RSA.encrypt(msg.encode('utf-8'))
 
 
 def run_client(host, port):
