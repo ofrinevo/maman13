@@ -38,7 +38,6 @@ class Server(object):
 
     def listen_to_client(self):
         enc_msg = self.conn.recv(10240)
-        print enc_msg
         if not enc_msg:
             print 'User disconnected, waiting for a new one'
             self.conn.close()

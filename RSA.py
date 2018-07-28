@@ -23,7 +23,8 @@ def decrypt_int(cipher, dkey, n):
 
 
 class RSA(object):
-    def __init__(self, n=None, public_key=None, private_key=None):
+    def __init__(self, n=None, public_key=None, private_key=None, key_size=consts.DEFAULT_KEY_SIZE):
+        self.key_size = key_size
         self.n = n
         self.private_key = private_key
         self.public_key = public_key
@@ -37,8 +38,8 @@ class RSA(object):
         return convert_long_to_str(long_msg)
 
     def encrypt(self, data):
-        bs = consts.DEFAULT_KEY_SIZE / 4 - 1
-        data_stream = (data[i:i + bs] for i in range(0, len(data), bs))
+        block_size = self.key_size / 4 - 1
+        data_stream = (data[i:i + block_size] for i in range(0, len(data), block_size))
         enc = b''
         for block in data_stream:
             enc_block = str(self._encrypt_str(block))
