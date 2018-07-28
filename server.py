@@ -1,3 +1,4 @@
+import os
 import socket
 import threading
 from Tkinter import *
@@ -63,29 +64,30 @@ def run_server():
 
 def _gui(server):
     def handle_clients():
-        if not server.conn:
-            server.init_new_client()
-            n_entry.insert(0, server.rsa_instance.n)
-        handle_existing_client()
-        root.after(0, handle_clients())
+        while True:
+            if not server.conn:
+                server.init_new_client()
+                n_entry.insert(0, server.rsa_instance.n)
+            handle_existing_client()
+        # root.after(0, handle_clients())
 
     def handle_existing_client():
-        # server.connect_client()
+        while True:
+            enc_msg = server.listen_to_client()
+            if not enc_msg:
+                return
+            dec_msg = server.decrypt_msg(enc_msg)
 
-        enc_msg = server.listen_to_client()
-        if not enc_msg:
-            return
-        dec_msg = server.decrypt_msg(enc_msg)
+            cipher_listbox.delete(0, 'end')
+            plain_listbox.delete(0, 'end')
 
-        cipher_listbox.delete(0, 'end')
-        plain_listbox.delete(0, 'end')
-
-        cipher_listbox.insert(0, enc_msg)
-        plain_listbox.insert(0, dec_msg)
+            cipher_listbox.insert(0, enc_msg)
+            plain_listbox.insert(0, dec_msg)
 
     def on_closing():
-        root.destroy()
         server.close()
+        root.destroy()
+        os._exit(0)
 
     root = Tk()
 
@@ -110,6 +112,6 @@ def _gui(server):
     root.protocol("WM_DELETE_WINDOW", on_closing)
 
     t1 = threading.Thread(target=handle_clients)
-    t1.start()
     t2 = threading.Thread(target=root.mainloop)
+    t1.start()
     t2.start()

@@ -66,7 +66,6 @@ def _gui(client):
     root = Tk()
 
     root.title('RSA Client')
-    # root.geometry("600x600")
     plaintext_label = Label(root, text='Plaintext: ')
     plaintext_label.pack()
 
