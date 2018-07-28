@@ -1,34 +1,32 @@
 # coding=utf-8
 import socket
-import RSA
 from Tkinter import *
+
+from RSA import RSA
 
 
 class Client(object):
     server = None
-    public_key = None
-    n = None
+    RSA = None
 
     def __init__(self, host='localhost', port=8080):
         self.host = host
         self.port = port
-        self.server = self._init_server()
+        self.server = self._init_connection_to_server()
         try:
             self._get_public_key_from_server()
         except:
             raise
 
-    def _init_server(self):
+    def _init_connection_to_server(self):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.connect((self.host, self.port))
         return server
 
     def _get_public_key_from_server(self):
         data = self.server.recv(10240)
-        if self._is_public_key(data):
-            self.public_key, self.n = self._get_key(data)
-        else:
-            raise Exception('Bad key form server')
+        key = self._get_key(data)
+        self.RSA = RSA(public_key=key[0], n=key[1])
 
     def close(self):
         self.server.close()
@@ -36,46 +34,30 @@ class Client(object):
     def send_to_server(self, msg):
         self.server.send(str(msg))
 
-    def _is_public_key(self, data):
-        return data.startswith('0 ')
-
     def _get_key(self, data):
-        trimmed_key = data[2:]
-        tup_key = eval(trimmed_key)
+        tup_key = eval(data)
         return tup_key[0], tup_key[1]
 
     def encrypt_msg(self, msg):
-        return RSA.encrypt_str(msg, self.public_key, self.n)
-
-
-# def _get_msg_to_enc():
-#     print 'Please enter a msg to enc or type exit to exit:'
-#     msg = raw_input()
-#     return msg
+        return self.RSA.encrypt(msg)
 
 
 def run_client():
     try:
         client = Client()
+        _gui(client)
     except:
         raise
-    _gui(client)
-    # while True:
-    #     msg = _get_msg_to_enc()
-    #     if msg == 'exit':
-    #         break
-    #     enc_msg = client.encrypt_msg(msg)
-    #     client.send_to_server(str(enc_msg))
-    # client.close()
 
 
 def _gui(client):
     def click_enc():
         msg = plain_text_entry.get()
-        print msg
-        enc = client.encrypt_msg(msg)
-        cipher_listbox.insert(0, enc)
-        client.send_to_server(str(enc))
+        if msg:
+            enc = client.encrypt_msg(msg)
+            cipher_listbox.delete(0, 'end')
+            cipher_listbox.insert(0, enc)
+            client.send_to_server(str(enc))
 
     def on_closing():
         client.close()
@@ -84,11 +66,11 @@ def _gui(client):
     root = Tk()
 
     root.title('RSA Client')
-
+    # root.geometry("600x600")
     plaintext_label = Label(root, text='Plaintext: ')
     plaintext_label.pack()
 
-    plain_text_entry = Entry(root)
+    plain_text_entry = Entry(root, justify='center', width=200)
     plain_text_entry.pack()
 
     button_enc = Button(root, text="Encrypt", command=click_enc)
@@ -96,27 +78,8 @@ def _gui(client):
 
     show = Label(root, text='Cipher:')
     show.pack()
-    cipher_listbox = Listbox(root, height=1, width=40)
+    cipher_listbox = Entry(root, justify='center', width=200)
     cipher_listbox.pack()
     root.protocol("WM_DELETE_WINDOW", on_closing)
-    root.mainloop()
 
-# def run_client(self):
-#     host = 'localhost'
-#     port = 8080
-#     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#     server.connect((host, port))
-#     data = server.recv(10240)
-#     if self._is_public_key(data):
-#         public_key, n = self._get_key(data)
-#     else:
-#         print 'No good format, exit'
-#         return
-#     _gui()
-#     while True:
-#         msg = _get_msg_to_enc()
-#         if msg == 'exit':
-#             break
-#         enc_msg = RSA.encrypt_str(msg, public_key, n)
-#         server.send(str(enc_msg))
-#     server.close()
+    root.mainloop()

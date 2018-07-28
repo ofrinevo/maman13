@@ -1,4 +1,3 @@
-import random
 from primes import is_prime, generate_large_prime
 
 
@@ -39,7 +38,7 @@ def generate_private_key(e, phi):
     return multiplicative_inverse(e, phi)
 
 
-def get_RSA_keys(bit_len=None, p=None, q=None):
+def get_RSA_keys(bit_len, p=None, q=None):
     if p and q:
         if p == q:
             raise Exception('Numbers must be different')

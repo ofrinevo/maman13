@@ -2,7 +2,7 @@ import consts
 
 
 def convert_str_to_long(s):
-    hex_str = s.encode('hex')
+    hex_str = s.encode('utf-8').encode('hex')
     return long(hex_str, 16)
 
 
@@ -18,29 +18,37 @@ def encrypt_int(message, ekey, n):
     return pow(message, ekey, n)
 
 
-def decrypt_int(cyphertext, dkey, n):
-    return pow(cyphertext, dkey, n)
-
-
-def encrypt_str(message, ekey, n):
-    long_msg = convert_str_to_long(message)
-    return encrypt_int(long_msg, ekey, n)
-
-
-def decrypt_str(cypher, dkey, n):
-    long_msg = decrypt_int(cypher, dkey, n)
-    return convert_long_to_str(long_msg)
+def decrypt_int(cipher, dkey, n):
+    return pow(cipher, dkey, n)
 
 
 class RSA(object):
-    def __init__(self, key_size=consts.DEFAULT_KEY_SIZE, p=None, q=None, e=None, d=None):
-        self.d = d
-        self.e = e
-        self.q = q
-        self.p = p
-        self.key_size = key_size
+    def __init__(self, n=None, public_key=None, private_key=None):
+        self.n = n
+        self.private_key = private_key
+        self.public_key = public_key
 
-    def encrypt_str(self, message, ekey, n):
+    def _encrypt_str(self, message):
         long_msg = convert_str_to_long(message)
-        print 'longmsg1 is ' + str(long_msg)
-        return encrypt_int(long_msg, ekey, n)
+        return encrypt_int(long_msg, self.public_key, self.n)
+
+    def _decrypt_str(self, cipher):
+        long_msg = decrypt_int(cipher, self.private_key, self.n)
+        return convert_long_to_str(long_msg)
+
+    def encrypt(self, data):
+        bs = consts.DEFAULT_KEY_SIZE / 4 - 1
+        data_stream = (data[i:i + bs] for i in range(0, len(data), bs))
+        enc = b''
+        for block in data_stream:
+            enc_block = str(self._encrypt_str(block))
+            enc += enc_block + ','
+        enc = enc[:-1]
+        return enc
+
+    def decrypt(self, data):
+        data_stream = data.split(',')
+        dec = b''
+        for block in data_stream:
+            dec += self._decrypt_str(int(block))
+        return dec

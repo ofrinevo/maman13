@@ -1,79 +1,116 @@
-# Echo server program
 import socket
+import threading
+from Tkinter import *
 
-import RSA
 import consts
 import key_gen
+from RSA import RSA
+
+
+class Server(object):
+    def __init__(self, host='', port=8080):
+        self.host = host
+        self.port = port
+        self.conn = None
+        self.socket = self._init_socket()
+        self.init_new_client()
+
+    def init_new_client(self):
+        self._init_rsa()
+        self.connect_client()
+
+    def _init_socket(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.bind((self.host, self.port))
+        s.listen(1)
+        return s
+
+    def _init_rsa(self):
+        rsa_keys = key_gen.get_RSA_keys(consts.DEFAULT_KEY_SIZE)
+        self.public_keys = rsa_keys[0]
+        self.rsa_instance = RSA(n=rsa_keys[1][1], private_key=rsa_keys[1][0])
+
+    def connect_client(self):
+        conn, addr = self.socket.accept()
+        print 'Connected by', addr
+        self.conn = conn
+        conn.send('{}'.format(self.public_keys))
+
+    def listen_to_client(self):
+        enc_msg = self.conn.recv(10240)
+        print enc_msg
+        if not enc_msg:
+            print 'User disconnected, waiting for a new one'
+            self.conn.close()
+            self.conn = None
+            return None
+        return int(enc_msg)
+
+    def decrypt_msg(self, cipher):
+        return self.rsa_instance.decrypt(str(cipher))
+
+    def close(self):
+        self.socket.close()
 
 
 def run_server():
-    host = ''
-    port = 8080
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind((host, port))
-    s.listen(1)
-    print 'Creating rsa keys'
-    rsa_keys = _init_server_rsa()
-    print 'Done making rsa keys, can connect client'
-    conn, addr = s.accept()
-    print 'Connected by', addr
-    conn.send('0 {}'.format(rsa_keys[0]))
-    while True:
-        print 'Ready to receive msgs from client'
-        enc_msg = conn.recv(10240)
+    try:
+        print 'Waiting for client, will open gui after a client connects'
+        server = Server()
+        _gui(server)
+    except:
+        raise
+
+
+def _gui(server):
+    def handle_clients():
+        if not server.conn:
+            server.init_new_client()
+            n_entry.insert(0, server.rsa_instance.n)
+        handle_existing_client()
+        root.after(0, handle_clients())
+
+    def handle_existing_client():
+        # server.connect_client()
+
+        enc_msg = server.listen_to_client()
         if not enc_msg:
-            print 'User disconnected, exiting'
-            break
-        plain_text = RSA.decrypt_str(int(enc_msg), rsa_keys[1][0], rsa_keys[1][1])
-        print plain_text
-    conn.close()
+            return
+        dec_msg = server.decrypt_msg(enc_msg)
 
+        cipher_listbox.delete(0, 'end')
+        plain_listbox.delete(0, 'end')
 
-def _init_server_rsa():
-    print 'Welcome to RSA Server!'
-    p, q = _get_primes_from_user()
-    if not p or not q:
-        bit_len = _get_bit_len_from_user()
-    else:
-        bit_len = consts.DEFAULT_KEY_SIZE / 4
-    keys = key_gen.get_RSA_keys(bit_len, p, q)
-    return keys
+        cipher_listbox.insert(0, enc_msg)
+        plain_listbox.insert(0, dec_msg)
 
+    def on_closing():
+        root.destroy()
+        server.close()
 
-def _get_bit_len_from_user():
-    while True:
-        print 'Please enter the wanted primes size in bits, make sure it is a power of 2. The default is: {}'.format(
-            consts.DEFAULT_KEY_SIZE)
-        try:
-            user_input = raw_input()
-            if user_input == '':
-                print 'Running with {}.'.format(consts.DEFAULT_KEY_SIZE)
-                return consts.DEFAULT_KEY_SIZE
-            bit_len = int(user_input)
-            return bit_len
-        except:
-            print 'You entered a non valid number, try again.'
+    root = Tk()
 
+    root.title('RSA Server')
+    n_label = Label(root, text='n: ')
+    n_label.pack()
 
-def _get_primes_from_user():
-    p, q = None, None
-    while True:
-        print 'Enter 2 different primes. Default will generate random primes: '
-        try:
-            print 'Enter the first one: '
-            user_input = raw_input()
-            if user_input == '':
-                print 'Will generate prime.'
-                p = None
-            else:
-                p = int(user_input)
-            print 'Enter the second one: '
-            user_input = raw_input()
-            if user_input == '':
-                print 'Will generate prime.'
-                q = None
-            else:
-                q = int(user_input)
-        except:
-            print 'You entered a non valid number, try again.'
-        return p, q
+    n_entry = Entry(root, justify='center', width=200)
+    n_entry.insert(0, server.rsa_instance.n)
+    n_entry.pack()
+
+    show = Label(root, text='Cipher:')
+    show.pack()
+    cipher_listbox = Entry(root, justify='center', width=200)
+    cipher_listbox.pack()
+
+    show_plain = Label(root, text='Plain Text:')
+    show_plain.pack()
+    plain_listbox = Entry(root, justify='center', width=200)
+    plain_listbox.pack()
+
+    root.protocol("WM_DELETE_WINDOW", on_closing)
+
+    t1 = threading.Thread(target=handle_clients)
+    t1.start()
+    t2 = threading.Thread(target=root.mainloop)
+    t2.start()

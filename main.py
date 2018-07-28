@@ -1,11 +1,11 @@
 # coding=utf-8
 import sys
+
 import client
-import server
-import primes
 import consts
 import key_gen
-import RSA
+import server
+from RSA import RSA
 
 
 def main():
@@ -31,16 +31,14 @@ def console_mode():
     else:
         bit_len = consts.DEFAULT_KEY_SIZE
     keys = key_gen.get_RSA_keys(bit_len, p, q)
-    n = keys[0][1]
-    public_key = keys[0][0]
-    private_key = keys[1][0]
+    rsa_instance = RSA(n=keys[0][1], public_key=keys[0][0], private_key=keys[1][0])
     while True:
         msg = _get_msg_to_enc()
         if msg == 'exit':
             break
-        enc = RSA.encrypt_str(msg, public_key, n)
+        enc = rsa_instance.encrypt(msg)
         print 'Enc msg is: {}'.format(enc)
-        dec = RSA.decrypt_str(enc, private_key, n)
+        dec = rsa_instance.decrypt(enc)
         print 'dec msg is: {}'.format(dec)
 
 
@@ -51,7 +49,7 @@ def _get_bit_len_from_user():
         try:
             user_input = raw_input()
             if user_input == '':
-                print 'Running with 1024.'
+                print 'Running with {}'.format(consts.DEFAULT_KEY_SIZE)
                 return consts.DEFAULT_KEY_SIZE
             bit_len = int(user_input)
             return bit_len
